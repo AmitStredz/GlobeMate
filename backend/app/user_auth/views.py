@@ -6,11 +6,17 @@ from datetime import timedelta
 import random
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import Traveller
 from .serializers import SignupSerializer
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.tokens import RefreshToken
+from google.auth.transport import requests
+from django.contrib.auth.models import User
+from .models import Traveller, District, Geography
+from google.oauth2 import id_token
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 class SignupView(APIView):
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
@@ -95,3 +101,51 @@ class VerifyOTPView(APIView):
             "refresh": str(refresh),
             "access": str(refresh.access_token)
         }, status=200)
+        
+        
+        from google.oauth2 import id_token
+
+
+
+class GoogleSignupView(APIView):
+    def post(self, request):
+        token = request.data.get("id_token")
+        if not token:
+            return Response({"detail": "ID token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
+
+            email = idinfo.get("email")
+            name = idinfo.get("name")
+            if not email:
+                return Response({"detail": "Email not found in token"}, status=status.HTTP_400_BAD_REQUEST)
+
+            user, created = User.objects.get_or_create(username=email, defaults={"email": email, "first_name": name})
+
+            age = request.data.get("age")
+            gender = request.data.get("gender")
+            district_ids = request.data.get("preferred_districts", [])  # expect list of IDs
+            geography_ids = request.data.get("preferred_geographies", [])
+
+            traveller, _ = Traveller.objects.get_or_create(user=user)
+            traveller.age = age
+            traveller.gender = gender
+            traveller.username = name  # custom field in your model
+            traveller.save()
+
+            if district_ids:
+                traveller.preferred_districts.set(District.objects.filter(id__in=district_ids))
+            if geography_ids:
+                traveller.preferred_geographies.set(Geography.objects.filter(id__in=geography_ids))
+
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "detail": "Google sign-in successful"
+            })
+
+        except ValueError:
+            return Response({"detail": "Invalid ID token"}, status=status.HTTP_400_BAD_REQUEST)

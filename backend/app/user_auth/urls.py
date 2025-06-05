@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import SignupView , VerifyOTPView
+from .views import SignupView , VerifyOTPView , GoogleSignupView
 
 
 urlpatterns = [
-    path('signup/', SignupView.as_view(), name='traveller-signup'),
-    path('verifyotp/', VerifyOTPView.as_view(), name='traveller-verify-otp'),
+    path('signup/', SignupView.as_view(), name='user-signup'),
+    path('verifyotp/', VerifyOTPView.as_view(), name='user-verify-otp'),
+    path('googlesignup/', GoogleSignupView.as_view(), name='user-google-signup'),
 ]
