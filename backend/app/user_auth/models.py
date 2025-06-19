@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 # --- Choices ---
@@ -26,13 +25,6 @@ DISTRICT_CHOICES = [
     ('KNR', 'Kasargod'),
 ]
 
-GEOGRAPHY_CHOICES = [
-    ('RVR', 'Rivers'),
-    ('FRST', 'Forests'),
-    ('MNTN', 'Mountains'),
-    ('BCH', 'Beaches'),
-    ('BCKWTR', 'Backwaters'),
-]
 
 # --- Models ---
 class Traveller(models.Model):
@@ -60,13 +52,24 @@ class District(models.Model):
     code = models.CharField(max_length=4, choices=DISTRICT_CHOICES, unique=True, primary_key=True)
     name = models.CharField(max_length=100)
 
+    # Bounding box coordinates
+    ne_longitude = models.FloatField(null=True, blank=True)
+    sw_longitude = models.FloatField(null=True, blank=True)
+    ne_latitude = models.FloatField(null=True, blank=True)
+    sw_latitude = models.FloatField(null=True, blank=True)
+
     def __str__(self):
         return self.name
 
+    def get_bounding_box(self):
+        # Used to plug into Geoapify rect filter
+        return f"{self.sw_longitude},{self.sw_latitude},{self.ne_longitude},{self.ne_latitude}"
+
 
 class Geography(models.Model):
-    code = models.CharField(max_length=10, choices=GEOGRAPHY_CHOICES, unique=True, primary_key=True)
+    code = models.CharField(max_length=10, unique=True, primary_key=True)
     name = models.CharField(max_length=100)
+    api_code = models.CharField(max_length=100, unique=True) 
 
     def __str__(self):
         return self.name
