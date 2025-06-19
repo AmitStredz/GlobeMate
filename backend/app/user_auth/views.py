@@ -15,6 +15,9 @@ from .models import Traveller, District, Geography
 from google.oauth2 import id_token
 from dotenv import load_dotenv
 import os
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+import requests
 
 load_dotenv()
 class SignupView(APIView):
@@ -76,6 +79,8 @@ class VerifyOTPView(APIView):
             return Response({"detail": "Email and OTP are required."}, status=400)
 
         user = Traveller.objects.filter(email=email).first()
+        
+        print(user)
 
         if not user:
             return Response({"detail": "No account found with this email."}, status=404)
@@ -149,3 +154,99 @@ class GoogleSignupView(APIView):
 
         except ValueError:
             return Response({"detail": "Invalid ID token"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FilteredPlacesView(APIView):
+    # permission_classes = [IsAuthenticated]
+    # authentication_classes = [JWTAuthentication]
+
+    def get(self, request):
+        email = request.data.get("email")
+        
+        # print(email)
+        try:
+            traveller = Traveller.objects.get(email=email)
+        except Traveller.DoesNotExist:
+            return Response({"detail": "Traveller profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # 1. Basic Info
+        age = traveller.age
+        gender = traveller.gender
+
+        # 2. Preferred Districts -> get bounding boxes
+        district_boxes = []
+        for district in traveller.preferred_districts.all():
+            box = district.get_bounding_box()
+            if box:
+                district_boxes.append(box)
+
+        if not district_boxes:
+            return Response({"detail": "No district bounding boxes found"}, status=400)
+
+        # 3. Preferred Geographies -> use Geoapify category codes
+        categories = ",".join([f"{geo.api_code}" for geo in traveller.preferred_geographies.all()])
+
+
+        # 4. Call Geoapify API for each district bounding box
+        results = []
+        for bbox in district_boxes:
+            url = (
+                f"https://api.geoapify.com/v2/places?"
+                f"categories={categories}&filter=rect:{bbox}&limit=100&apiKey={os.getenv('GEOAPIFY_API_KEY')}"
+            )
+            
+            print(url)
+            res = requests.get(url)
+            if res.status_code == 200:
+                results.extend(res.json().get("features", []))
+
+        return Response({"places": results})
+
+
+class GooglePlacesSearchView(APIView):
+    # Enable these if authentication is required
+    # permission_classes = [IsAuthenticated]
+    # authentication_classes = [JWTAuthentication]
+
+    def get(self, request):
+        email = request.data.get("email")  # Or use request.user.email if auth enabled
+
+        try:
+            traveller = Traveller.objects.get(email=email)
+        except Traveller.DoesNotExist:
+            return Response({"detail": "Traveller not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        geographies = [geo.name for geo in traveller.preferred_geographies.all()]
+        districts = [district.name for district in traveller.preferred_districts.all()]
+
+        google_api_key = os.getenv("GOOGLE_API_KEY")
+        if not google_api_key:
+            return Response({"detail": "Missing Google API Key"}, status=500)
+
+        headers = {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": google_api_key,
+            "X-Goog-FieldMask": (
+                "places.displayName,places.formattedAddress,places.priceLevel,"
+                "places.location,places.rating,places.userRatingCount,"
+                "places.photos,places.id,places.primaryType,places.nationalPhoneNumber"
+            )
+        }
+
+        final_results = []
+
+        for geo in geographies:
+            for district in districts:
+                query = f"{geo} in {district}, Kerala"
+                body = {"textQuery": query}
+
+                url = "https://places.googleapis.com/v1/places:searchText"
+                res = requests.post(url, headers=headers, json=body)
+
+                if res.status_code == 200:
+                    places = res.json().get("places", [])
+                    final_results.extend(places)
+                else:
+                    print(f"Failed for query: {query}, status: {res.status_code}")
+
+        return Response({"places": final_results})
