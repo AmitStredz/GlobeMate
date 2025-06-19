@@ -155,7 +155,35 @@ class GoogleSignupView(APIView):
         except ValueError:
             return Response({"detail": "Invalid ID token"}, status=status.HTTP_400_BAD_REQUEST)
 
+class LoginView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
 
+        if not email or not password:
+            return Response({"detail": "Email and password are required."}, status=400)
+
+        try:
+            user = Traveller.objects.get(email=email)
+        except Traveller.DoesNotExist:
+            return Response({"detail": "User not found."}, status=404)
+
+        if not user.is_verified:
+            return Response({"detail": "Please verify your email before logging in."}, status=403)
+
+        # Use check_password since we're not using Django's default User model
+        from django.contrib.auth.hashers import check_password
+        if not check_password(password, user.password):
+            return Response({"detail": "Invalid credentials."}, status=401)
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "detail": "Login successful"
+        }, status=200)
+        
 class FilteredPlacesView(APIView):
     # permission_classes = [IsAuthenticated]
     # authentication_classes = [JWTAuthentication]
