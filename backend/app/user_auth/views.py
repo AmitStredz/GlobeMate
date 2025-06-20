@@ -106,8 +106,10 @@ class VerifyOTPView(APIView):
 
         # Generate JWT token for linked User
         refresh = RefreshToken.for_user(traveller.user)
+        user_data = TravellerSerializer(traveller).data
 
         return Response({
+            "user": user_data,
             "detail": "Email verified successfully.",
             "refresh": str(refresh),
             "access": str(refresh.access_token)
@@ -161,8 +163,8 @@ class GoogleSignupView(APIView):
 
 class LoginView(APIView):
     def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
+        email = request.data.get("email") 
+        password = request.data.get("password") 
 
         try:
             user = User.objects.get(email=email)
@@ -184,7 +186,7 @@ class LoginView(APIView):
         # Generate token
         refresh = RefreshToken.for_user(user)
         
-        user_data = TravellerSerializer(user).data
+        user_data = TravellerSerializer(traveller).data
 
         print(user_data)
         return Response({

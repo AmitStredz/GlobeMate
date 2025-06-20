@@ -4,9 +4,9 @@ import { API_BASE_URL } from '@/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (data: SignupPayload) => Promise<boolean>;
-  verifyOTP: (otp: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<string | true>;
+  signup: (data: SignupPayload) => Promise<string | true>;
+  verifyOTP: (otp: string) => Promise<string | true>;
   logout: () => void;
   pendingEmail: string | null;
 }
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Real API call for login
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<string | true> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
       const res = await fetch(`${API_BASE_URL}/login/`, {
@@ -57,18 +57,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      let data;
+      try {
+        data = await res.json();
+      } catch {}
       if (!res.ok) {
         let message = 'Login failed';
-        try {
-          const err = await res.json();
-          message = err.message || message;
-        } catch {}
-        console.error(message);
+        if (data) {
+          if (typeof data.detail === 'string') message = data.detail;
+          else if (typeof data === 'object') message = Object.values(data).flat().join(' ');
+        }
         setAuthState(prev => ({ ...prev, isLoading: false }));
-        return false;
+        return message;
       }
-      const data = await res.json();
-      const token = data.token || data.access || data.access_token;
+      const token = data.access ;
       await AsyncStorage.setItem('accessToken', token);
       await AsyncStorage.setItem('user', JSON.stringify(data.user));
       setAuthState({
@@ -79,14 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return true;
     } catch (error) {
-      console.error('Login error:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
-      return false;
+      return 'Login error: ' + (error instanceof Error ? error.message : 'Unknown error');
     }
   };
 
   // Real API call for signup
-  const signup = async (data: SignupPayload): Promise<boolean> => {
+  const signup = async (data: SignupPayload): Promise<string | true> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
       const res = await fetch(`${API_BASE_URL}/signup/`, {
@@ -94,48 +95,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      let respData;
+      try {
+        respData = await res.json();
+      } catch {}
       if (!res.ok) {
         let message = 'Signup failed';
-        try {
-          const err = await res.json();
-          message = err.message || message;
-        } catch {}
-        console.error(message);
+        if (respData) {
+          if (typeof respData.detail === 'string') message = respData.detail;
+          else if (typeof respData === 'object') message = Object.entries(respData).map(([k, v]) => `${k}: ${(Array.isArray(v) ? v.join(', ') : v)}`).join('\n');
+        }
         setAuthState(prev => ({ ...prev, isLoading: false }));
-        return false;
+        return message;
       }
       setPendingEmail(data.email);
       setAuthState(prev => ({ ...prev, isLoading: false }));
       return true;
     } catch (error) {
-      console.error('Signup error:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
-      return false;
+      return 'Signup error: ' + (error instanceof Error ? error.message : 'Unknown error');
     }
   };
 
   // Real API call for OTP verification
-  const verifyOTP = async (otp: string): Promise<boolean> => {
+  const verifyOTP = async (otp: string): Promise<string | true> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      if (!pendingEmail) throw new Error('No email to verify');
+      if (!pendingEmail) return 'No email to verify';
       const res = await fetch(`${API_BASE_URL}/verifyotp/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: pendingEmail, otp }),
       });
+      let data;
+      try {
+        data = await res.json();
+      } catch {}
       if (!res.ok) {
         let message = 'OTP verification failed';
-        try {
-          const err = await res.json();
-          message = err.message || message;
-        } catch {}
-        console.error(message);
+        if (data) {
+          if (typeof data.detail === 'string') message = data.detail;
+          else if (typeof data === 'object') message = Object.values(data).flat().join(' ');
+        }
         setAuthState(prev => ({ ...prev, isLoading: false }));
-        return false;
+        return message;
       }
-      const data = await res.json();
-      const token = data.token || data.access || data.access_token;
+      const token = data.access;
       await AsyncStorage.setItem('accessToken', token);
       await AsyncStorage.setItem('user', JSON.stringify(data.user));
       setAuthState({
@@ -147,9 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPendingEmail(null);
       return true;
     } catch (error) {
-      console.error('OTP verification error:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
-      return false;
+      return 'OTP verification error: ' + (error instanceof Error ? error.message : 'Unknown error');
     }
   };
 

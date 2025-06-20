@@ -1,0 +1,9 @@
+Django==5.2.2
+djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.0
+google-auth==2.40.3
+requests==2.32.3
+PyJWT==2.9.0
+psycopg2-binary==2.9.10
+python-dotenv==1.1.0
+dj_database_url==2.3.0

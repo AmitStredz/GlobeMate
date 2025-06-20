@@ -31,11 +31,11 @@ export default function VerifyOTP() {
     }
     
     setError('');
-    const success = await verifyOTP(otp);
-    if (success) {
+    const result = await verifyOTP(otp);
+    if (result === true) {
       router.replace('/(tabs)');
     } else {
-      setError('Invalid verification code. Please try again.');
+      setError(result);
     }
   };
 
