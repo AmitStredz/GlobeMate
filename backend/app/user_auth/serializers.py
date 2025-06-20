@@ -5,13 +5,13 @@ from django.contrib.auth.hashers import make_password
 class DistrictSerializer(serializers.ModelSerializer):
     class Meta:
         model = District
-        fields = ['id', 'code', 'name']
+        fields = ['code', 'name']
 
 
 class GeographySerializer(serializers.ModelSerializer):
     class Meta:
         model = Geography
-        fields = ['id', 'type']
+        fields = ['code', 'api_code', 'name']
 
 
 class TravellerSerializer(serializers.ModelSerializer):

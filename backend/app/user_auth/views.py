@@ -19,6 +19,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import requests
 
+from .serializers import TravellerSerializer  # Make sure you have this
+
 load_dotenv()
 class SignupView(APIView):
     def post(self, request):
@@ -177,23 +179,28 @@ class LoginView(APIView):
             return Response({"detail": "Invalid credentials."}, status=401)
 
         refresh = RefreshToken.for_user(user)
+        
+        user_data = TravellerSerializer(user).data
 
+        print(user_data)
         return Response({
+            "user": user_data,
             "refresh": str(refresh),
             "access": str(refresh.access_token),
             "detail": "Login successful"
         }, status=200)
         
 class FilteredPlacesView(APIView):
-    # permission_classes = [IsAuthenticated]
-    # authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def get(self, request):
-        email = request.data.get("email")
+        # email = request.data.get("email")
+        user = request.user
         
-        # print(email)
+        print(user)
         try:
-            traveller = Traveller.objects.get(email=email)
+            traveller = Traveller.objects.get(email=user.email)
         except Traveller.DoesNotExist:
             return Response({"detail": "Traveller profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
