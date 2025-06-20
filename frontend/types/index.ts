@@ -1,8 +1,21 @@
+export interface District {
+  code: string;
+  name: string;
+}
+
+export interface Geography {
+  code: string;
+  api_code: string;
+  name: string;
+}
 export interface User {
   id: string;
   email: string;
-  name: string;
-  preferences: string[];
+  username: string;
+  gender: string;
+  // preferences: string[];
+  preferred_districts: District[];
+  preferred_geographies: Geography[];
 }
 
 export interface Destination {

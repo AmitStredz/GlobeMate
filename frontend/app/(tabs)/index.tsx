@@ -30,12 +30,12 @@ export default function Home() {
     setError(null);
     try {
       const res = await fetch(`${API_BASE_URL}/getPlaces/`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email:"ammu@gmail.com" }),
+        // body: JSON.stringify({ email:"ammu@gmail.com" }),
       });
       let data;
       try {
@@ -96,7 +96,7 @@ export default function Home() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.greeting}>Hello, {user?.name}! 👋</Text>
+            <Text style={styles.greeting}>Hello, {user?.username}! 👋</Text>
             <View style={styles.locationContainer}>
               <MapPin size={16} color="#6B7280" />
               <Text style={styles.location}>Where would you like to go?</Text>

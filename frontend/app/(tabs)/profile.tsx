@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { User, Settings, Heart, MapPin, LogOut, CreditCard as Edit, Bell, Shield, CircleHelp as HelpCircle } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 export default function Profile() {
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   const handleLogout = () => {
     Alert.alert(
@@ -30,7 +32,7 @@ export default function Profile() {
   };
 
   const handleEditProfile = () => {
-    Alert.alert('Edit Profile', 'Profile editing feature coming soon!');
+    router.push('/(profile)/edit-profile')
   };
 
   const handleMenuPress = (title: string) => {
@@ -56,15 +58,9 @@ export default function Profile() {
               <User size={40} color="#FFFFFF" />
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.name}>{user?.name}</Text>
+              <Text style={styles.name}>{user?.username}</Text>
               <Text style={styles.email}>{user?.email}</Text>
-              <View style={styles.preferencesContainer}>
-                {user?.preferences.map((preference, index) => (
-                  <View key={index} style={styles.preferenceTag}>
-                    <Text style={styles.preferenceText}>{preference}</Text>
-                  </View>
-                ))}
-              </View>
+              <Text style={styles.email}>{user?.gender == 'M'?"Male":"Female"}</Text>
             </View>
           </View>
         </View>
@@ -108,6 +104,10 @@ export default function Profile() {
           <LogOut size={20} color="#EF4444" />
           <Text style={styles.logoutButtonText}>Sign Out</Text>
         </TouchableOpacity>
+
+        {/* <TouchableOpacity onPress={() => router.push('/(profile)/edit-profile')} style={{ backgroundColor: '#1E40AF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+          <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>Edit Preferences</Text>
+        </TouchableOpacity> */}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>TravelApp v1.0.0</Text>
