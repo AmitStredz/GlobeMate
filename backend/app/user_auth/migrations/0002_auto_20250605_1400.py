@@ -2,7 +2,6 @@ from django.db import migrations
 
 def load_initial_data(apps, schema_editor):
     District = apps.get_model('user_auth', 'District')
-    Geography = apps.get_model('user_auth', 'Geography')
 
     DISTRICTS = [
         ('TVM', 'Thiruvananthapuram'),

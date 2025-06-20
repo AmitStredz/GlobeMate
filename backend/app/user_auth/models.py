@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import User
 
 # --- Choices ---
 GENDER_CHOICES = [
@@ -28,6 +29,7 @@ DISTRICT_CHOICES = [
 
 # --- Models ---
 class Traveller(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     username = models.CharField(max_length=100)
     age = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(120)])
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)

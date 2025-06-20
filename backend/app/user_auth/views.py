@@ -37,19 +37,24 @@ class SignupView(APIView):
             otp = str(random.randint(100000, 999999))
             expiry = timezone.now() + timedelta(minutes=10)
 
-            # Hash password before saving manually
+            # Extract and prepare data
             validated_data = serializer.validated_data
             districts = validated_data.pop('preferred_districts')
             geographies = validated_data.pop('preferred_geographies')
-            password = make_password(validated_data.pop('password'))
+            raw_password = validated_data.pop('password')
+            hashed_password = make_password(raw_password)
 
-            # Create user
+            # Create Django User
+            user = User.objects.create_user(username=email, email=email, password=raw_password)
+
+            # Create Traveller linked to User
             traveller = Traveller.objects.create(
+                user=user,
                 **validated_data,
-                password=password,
+                password=hashed_password,
                 otp=otp,
                 otp_expiry=expiry,
-                is_verified=False
+                is_verified=False,
             )
             traveller.preferred_districts.set(districts)
             traveller.preferred_geographies.set(geographies)
@@ -70,8 +75,7 @@ class SignupView(APIView):
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+    
 class VerifyOTPView(APIView):
     def post(self, request):
         email = request.data.get("email")
@@ -80,37 +84,35 @@ class VerifyOTPView(APIView):
         if not email or not otp:
             return Response({"detail": "Email and OTP are required."}, status=400)
 
-        user = Traveller.objects.filter(email=email).first()
-        
-        print(user)
+        traveller = Traveller.objects.filter(email=email).first()
 
-        if not user:
+        if not traveller:
             return Response({"detail": "No account found with this email."}, status=404)
 
-        if user.is_verified:
+        if traveller.is_verified:
             return Response({"detail": "User already verified."}, status=400)
 
-
-        if user.otp != otp:
+        if traveller.otp != otp:
             return Response({"detail": "Invalid OTP."}, status=400)
 
-        # Mark verified
-        user.is_verified = True
-        user.otp = None
-        user.otp_expiry = None
-        user.save()
+        if traveller.otp_expiry and timezone.now() > traveller.otp_expiry:
+            return Response({"detail": "OTP has expired."}, status=400)
 
-        # Generate JWT token
-        refresh = RefreshToken.for_user(user)
+        # Mark as verified
+        traveller.is_verified = True
+        traveller.otp = None
+        traveller.otp_expiry = None
+        traveller.save()
+
+        # Generate JWT token for linked User
+        refresh = RefreshToken.for_user(traveller.user)
 
         return Response({
             "detail": "Email verified successfully.",
             "refresh": str(refresh),
             "access": str(refresh.access_token)
         }, status=200)
-        
-        
-        from google.oauth2 import id_token
+     
 
 
 
@@ -162,22 +164,24 @@ class LoginView(APIView):
         email = request.data.get("email")
         password = request.data.get("password")
 
-        if not email or not password:
-            return Response({"detail": "Email and password are required."}, status=400)
-
         try:
-            user = Traveller.objects.get(email=email)
-        except Traveller.DoesNotExist:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
             return Response({"detail": "User not found."}, status=404)
 
-        if not user.is_verified:
-            return Response({"detail": "Please verify your email before logging in."}, status=403)
-
-        # Use check_password since we're not using Django's default User model
-        from django.contrib.auth.hashers import check_password
-        if not check_password(password, user.password):
+        # Check password
+        if not user.check_password(password):
             return Response({"detail": "Invalid credentials."}, status=401)
 
+        # Fetch linked Traveller profile
+        try:
+            traveller = user.traveller
+            if not traveller.is_verified:
+                return Response({"detail": "Please verify your email before logging in."}, status=403)
+        except Traveller.DoesNotExist:
+            return Response({"detail": "Traveller profile missing."}, status=404)
+
+        # Generate token
         refresh = RefreshToken.for_user(user)
         
         user_data = TravellerSerializer(user).data
@@ -189,13 +193,14 @@ class LoginView(APIView):
             "access": str(refresh.access_token),
             "detail": "Login successful"
         }, status=200)
-        
+  
 class FilteredPlacesView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
     def get(self, request):
-        # email = request.data.get("email")
         user = request.user
         
         print(user)
@@ -240,14 +245,14 @@ class FilteredPlacesView(APIView):
 
 class GooglePlacesSearchView(APIView):
     # Enable these if authentication is required
-    # permission_classes = [IsAuthenticated]
-    # authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def get(self, request):
-        email = request.data.get("email")  # Or use request.user.email if auth enabled
+        user = request.user  # Or use request.user.email if auth enabled
 
         try:
-            traveller = Traveller.objects.get(email=email)
+            traveller = Traveller.objects.get(email=user.email)
         except Traveller.DoesNotExist:
             return Response({"detail": "Traveller not found"}, status=status.HTTP_404_NOT_FOUND)
 
