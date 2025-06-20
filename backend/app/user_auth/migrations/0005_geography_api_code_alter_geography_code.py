@@ -39,7 +39,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(load_geography_data),
         migrations.AddField(
             model_name='geography',
             name='api_code',
@@ -50,4 +49,5 @@ class Migration(migrations.Migration):
             name='code',
             field=models.CharField(max_length=30, primary_key=True, serialize=False, unique=True),
         ),
+        migrations.RunPython(load_geography_data),
     ]

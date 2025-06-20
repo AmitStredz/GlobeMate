@@ -1,43 +1,40 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/Colors';
-import { Destination } from '@/constants/DummyData';
+import { Star, MapPin } from 'lucide-react-native';
+import { Destination } from '@/types';
 
-interface Props {
+interface DestinationCardProps {
   destination: Destination;
   onPress?: () => void;
 }
 
-export function DestinationCard({ destination, onPress }: Props) {
+export function DestinationCard({ destination, onPress }: DestinationCardProps) {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <Image source={{ uri: destination.image }} style={styles.image} />
-      <View style={styles.overlay}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.name}>{destination.name}</Text>
-            <TouchableOpacity style={styles.favoriteButton}>
-              <Ionicons name="star-outline" size={24} color={Colors.text.light} />
-            </TouchableOpacity>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title} numberOfLines={1}>
+            {destination.title}
+          </Text>
+          <View style={styles.rating}>
+            <Star size={14} color="#F59E0B" fill="#F59E0B" />
+            <Text style={styles.ratingText}>{destination.rating}</Text>
           </View>
-          <View style={styles.locationContainer}>
-            <Ionicons name="location" size={16} color={Colors.text.light} />
-            <Text style={styles.location}>{destination.location}</Text>
-          </View>
-          <View style={styles.statsContainer}>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{destination.rating}</Text>
-              <Text style={styles.statLabel}>Rating</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{destination.reviews}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>${destination.price}</Text>
-              <Text style={styles.statLabel}>Per day</Text>
-            </View>
+        </View>
+        <View style={styles.location}>
+          <MapPin size={14} color="#6B7280" />
+          <Text style={styles.locationText} numberOfLines={1}>
+            {destination.location}
+          </Text>
+        </View>
+        <Text style={styles.description} numberOfLines={2}>
+          {destination.description}
+        </Text>
+        <View style={styles.footer}>
+          <Text style={styles.price}>{destination.price}</Text>
+          <View style={styles.category}>
+            <Text style={styles.categoryText}>{destination.category}</Text>
           </View>
         </View>
       </View>
@@ -47,80 +44,86 @@ export function DestinationCard({ destination, onPress }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: Colors.background.card,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    elevation: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
+    elevation: 4,
   },
   image: {
     width: '100%',
     height: 200,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   content: {
-    flex: 1,
     padding: 16,
-    justifyContent: 'flex-end',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
-  name: {
-    fontSize: 24,
-    fontFamily: 'Poppins-Bold',
-    color: Colors.text.light,
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    flex: 1,
+    marginRight: 8,
   },
-  favoriteButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  locationContainer: {
+  rating: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
   },
   location: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Medium',
-    color: Colors.text.light,
-    marginLeft: 4,
-  },
-  statsContainer: {
     flexDirection: 'row',
-    marginTop: 16,
-  },
-  stat: {
-    flex: 1,
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 12,
-    padding: 8,
-    marginHorizontal: 4,
+    gap: 4,
+    marginBottom: 8,
   },
-  statValue: {
-    fontSize: 16,
-    fontFamily: 'Poppins-SemiBold',
-    color: Colors.text.light,
+  locationText: {
+    fontSize: 14,
+    color: '#6B7280',
+    flex: 1,
   },
-  statLabel: {
+  description: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  price: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E40AF',
+  },
+  category: {
+    backgroundColor: '#EBF4FF',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  categoryText: {
     fontSize: 12,
-    fontFamily: 'Poppins-Regular',
-    color: Colors.text.light,
-    marginTop: 2,
+    fontWeight: '600',
+    color: '#1E40AF',
   },
-}); 
+});

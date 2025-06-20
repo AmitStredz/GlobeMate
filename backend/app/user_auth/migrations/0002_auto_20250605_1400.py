@@ -20,10 +20,19 @@ def load_initial_data(apps, schema_editor):
         ('KNR', 'Kannur'),
     ]
 
+    # GEOGRAPHIES = [
+    #     ('RVR', 'Rivers'),
+    #     ('FRST', 'Forests'),
+    #     ('MNTN', 'Mountains'),
+    #     ('BCH', 'Beaches'),
+    #     ('BCKWTR', 'Backwaters'),
+    # ]
 
     for code, name in DISTRICTS:
         District.objects.get_or_create(code=code, name=name)
 
+    # for code, name in GEOGRAPHIES:
+    #     Geography.objects.get_or_create(code=code, name =name)
 
 class Migration(migrations.Migration):
 

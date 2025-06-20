@@ -1,119 +1,40 @@
-import { Tabs } from 'expo-router';
-import { useFonts } from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/Colors';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import * as SplashScreen from 'expo-splash-screen';
+import { AuthProvider } from '@/hooks/useAuth';
+import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
-// Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
-    'Poppins-Regular': require('../assets/fonts/Poppins-Regular.ttf'),
-    'Poppins-Medium': require('../assets/fonts/Poppins-Medium.ttf'),
-    'Poppins-SemiBold': require('../assets/fonts/Poppins-SemiBold.ttf'),
-    'Poppins-Bold': require('../assets/fonts/Poppins-Bold.ttf'),
+  useFrameworkReady();
+
+  const [fontsLoaded, fontError] = useFonts({
+    'Inter-Regular': Inter_400Regular,
+    'Inter-SemiBold': Inter_600SemiBold,
+    'Inter-Bold': Inter_700Bold,
   });
 
   useEffect(() => {
-    if (loaded) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [fontsLoaded, fontError]);
 
-  if (!loaded) return null;
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarStyle: {
-          backgroundColor: Colors.background.card,
-          borderTopColor: Colors.border.light,
-          height: 80,
-          paddingBottom: 20,
-          paddingHorizontal: 16,
-          borderTopWidth: 1,
-          position: 'absolute',
-          bottom: 0,
-        },
-        tabBarActiveTintColor: Colors.secondary.main,
-        tabBarInactiveTintColor: Colors.text.secondary,
-        headerStyle: {
-          backgroundColor: Colors.background.main,
-        },
-        headerTitleStyle: {
-          fontFamily: 'Poppins-SemiBold',
-        },
-        tabBarLabelStyle: {
-          fontFamily: 'Poppins-Medium',
-          fontSize: 12,
-          marginTop: 4,
-        },
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="home-outline" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="search-outline" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="post"
-        options={{
-          title: 'Add Post',
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.addButton}>
-              <Ionicons 
-                name="add" 
-                size={24} 
-                color={Colors.text.light}
-              />
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="person-outline" size={24} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+    <AuthProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      <StatusBar style="dark" />
+    </AuthProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  addButton: {
-    backgroundColor: Colors.secondary.main,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: -32,
-    shadowColor: Colors.secondary.main,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-});
