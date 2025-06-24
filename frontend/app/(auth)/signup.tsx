@@ -67,11 +67,11 @@ export default function Signup() {
       email,
       password,
     };
-    const success = await signup(payload);
-    if (success) {
+    const result = await signup(payload);
+    if (result === true) {
       router.push('/(auth)/verify-otp');
     } else {
-      Alert.alert('Signup Failed', 'Please try again later.');
+      Alert.alert('Signup Failed', result);
     }
   };
 

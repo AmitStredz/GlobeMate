@@ -45,11 +45,11 @@ export default function Login() {
   const handleLogin = async () => {
     if (!validateForm()) return;
     
-    const success = await login(email, password);
-    if (success) {
+    const result = await login(email, password);
+    if (result === true) {
       router.replace('/(tabs)');
     } else {
-      Alert.alert('Login Failed', 'Please check your credentials and try again.');
+      Alert.alert('Login Failed', result);
     }
   };
 

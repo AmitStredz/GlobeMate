@@ -13,6 +13,7 @@ export interface User {
   email: string;
   username: string;
   gender: string;
+  age: number;
   // preferences: string[];
   preferred_districts: District[];
   preferred_geographies: Geography[];
