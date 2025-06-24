@@ -175,7 +175,7 @@ class LoginView(APIView):
 
         # Fetch linked Traveller profile
         try:
-            traveller = user.traveller
+            traveller = Traveller.objects.get(email=email)
             if not traveller.is_verified:
                 return Response({"detail": "Please verify your email before logging in."}, status=403)
         except Traveller.DoesNotExist:
@@ -184,9 +184,9 @@ class LoginView(APIView):
         # Generate token
         refresh = RefreshToken.for_user(user)
         
-        user_data = TravellerSerializer(user).data
+        # print(TravellerSerializer(user))
+        user_data = TravellerSerializer(traveller).data
 
-        print(user_data)
         return Response({
             "user": user_data,
             "refresh": str(refresh),
@@ -244,12 +244,11 @@ class FilteredPlacesView(APIView):
 
 
 class GooglePlacesSearchView(APIView):
-    # Enable these if authentication is required
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
     def get(self, request):
-        user = request.user  # Or use request.user.email if auth enabled
+        user = request.user
 
         try:
             traveller = Traveller.objects.get(email=user.email)
@@ -263,30 +262,64 @@ class GooglePlacesSearchView(APIView):
         if not google_api_key:
             return Response({"detail": "Missing Google API Key"}, status=500)
 
+        search_url = "https://places.googleapis.com/v1/places:searchText"
+        detail_url = "https://maps.googleapis.com/maps/api/place/details/json"
+        photo_url = "https://maps.googleapis.com/maps/api/place/photo"
+
         headers = {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": google_api_key,
-            "X-Goog-FieldMask": (
-                "places.displayName,places.formattedAddress,places.priceLevel,"
-                "places.location,places.rating,places.userRatingCount,"
-                "places.photos,places.id,places.primaryType,places.nationalPhoneNumber"
-            )
+            "X-Goog-FieldMask": "places.displayName,places.id"
         }
 
-        final_results = []
+        final_places = []
 
         for geo in geographies:
             for district in districts:
                 query = f"{geo} in {district}, Kerala"
-                body = {"textQuery": query}
+                search_payload = {
+                    "textQuery": query,
+                    "maxResultCount": 10,
+                    "languageCode": "en"
+                }
 
-                url = "https://places.googleapis.com/v1/places:searchText"
-                res = requests.post(url, headers=headers, json=body)
+                print(f"Searching for: {query}")
+                search_response = requests.post(search_url, headers=headers, json=search_payload)
+                if search_response.status_code != 200:
+                    continue
 
-                if res.status_code == 200:
-                    places = res.json().get("places", [])
-                    final_results.extend(places)
-                else:
-                    print(f"Failed for query: {query}, status: {res.status_code}")
+                search_results = search_response.json().get("places", [])
+                for place in search_results:
+                    place_id = place.get("id")
+                    if not place_id:
+                        continue
 
-        return Response({"places": final_results})
+                    # Get place details
+                    detail_params = {
+                        "place_id": place_id,
+                        "fields": "name,formatted_address,geometry,photos,rating,user_ratings_total,types,url,address_components,price_level",
+                        "key": google_api_key
+                    }
+                    detail_response = requests.get(detail_url, params=detail_params)
+                    if detail_response.status_code != 200:
+                        continue
+
+                    place_details = detail_response.json().get("result", {})
+
+                    # Fetch one photo URL if available
+                    photos = place_details.get("photos", [])
+                    first_photo_url = None
+                    if photos:
+                        photo_ref = photos[0].get("photo_reference")
+                        if photo_ref:
+                            photo_params = {
+                                "maxwidth": 800,
+                                "photoreference": photo_ref,
+                                "key": google_api_key
+                            }
+                            first_photo_url = f"{photo_url}?maxwidth=800&photoreference={photo_ref}&key={google_api_key}"
+
+                    place_details["photo_url"] = first_photo_url
+                    final_places.append(place_details)
+
+        return Response({"places": final_places})
