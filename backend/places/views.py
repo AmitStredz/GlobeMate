@@ -140,6 +140,7 @@ class GetAllPlaces(APIView):
         return Response({"places": final_places})
 
 class GetPlaceDetails(APIView):
+    
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -156,7 +157,7 @@ class GetPlaceDetails(APIView):
         detail_url = "https://maps.googleapis.com/maps/api/place/details/json"
         detail_params = {
             "place_id": place_id,
-            "fields": "name,formatted_address,geometry,photos,rating,user_ratings_total,types,url,address_components,price_level",
+            "fields": "name,formatted_address,geometry,photos,types,address_components,price_level",
             "key": google_api_key
         }
 
@@ -169,6 +170,33 @@ class GetPlaceDetails(APIView):
         # Fetch all photo URL if available
         
         photos = place_details.get("photos", [])
+        
+        lat, long = place_details.get("geometry", {}).get("location", {}).values()
+        weather_url = f"https://api.openweathermap.org/data/3.0/onecall"
+        weather_params = {
+            "lat": lat,
+            "lon": long,
+            "appid": os.getenv("OPEN_WEATHER_API_KEY"),
+            "units": "metric",
+            "exclude": "alerts,hourly,minutely"
+        }
+        weather_response = requests.get(weather_url, params=weather_params)
+        if weather_response.status_code == 200:
+            current_weather = weather_response.json().get("current", {})
+            daily_weather = weather_response.json().get("daily", {})
+            weather={
+                "current": current_weather,
+                "daily": daily_weather,    
+                "metric": {
+                    "temperature": "Celsius",
+                    "rain speed": "meters per second",
+                    "pressure": "hPa (hectopascal)",
+                    "humidity": "percentage (%)"
+                }
+            }
+            place_details["weather"]=weather
+            
+
         photo_urls = []
         for photo in photos:
             photo_ref = photo.get("photo_reference")
