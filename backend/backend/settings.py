@@ -41,8 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'app.user_auth',  # Your custom app for user authentication
     'places',  # Your custom app for places
+    'authentication',  # Your custom app for authentication
     'rest_framework',
     'corsheaders',
 ]
