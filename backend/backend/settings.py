@@ -103,7 +103,7 @@ else:
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),  # Set to 7 days or your desired time
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=3),  # Set to 7 days or your desired time
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
