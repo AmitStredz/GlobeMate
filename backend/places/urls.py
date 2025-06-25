@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import FilteredPlacesView, GooglePlacesSearchView
+from .views import GetAllPlaces, GetPlaceDetails
 
 
 urlpatterns = [
-    path('getPlaces/', FilteredPlacesView.as_view(), name='user-get-places'),
-    path('getPlacesFromGoogleMap/', GooglePlacesSearchView.as_view(), name='user-get-places-google'),
+    # path('getPlaces/', FilteredPlacesView.as_view(), name='user-get-places'),
+    path('getAllPlaces/', GetAllPlaces.as_view(), name='get-all-places'),
+    path('getPlaceDetails/', GetPlaceDetails.as_view(), name='get-one-place-details'),
 ]
