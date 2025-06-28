@@ -110,7 +110,7 @@ class GetAllPlaces(APIView):
                     # Get place details
                     detail_params = {
                         "place_id": place_id,
-                        "fields": "name,formatted_address,geometry,photos,rating,user_ratings_total,types,url,address_components,price_level",
+                        "fields": "name,formatted_address,geometry,rating,user_ratings_total,types,url,price_level,photos",
                         "key": google_api_key
                     }
                     detail_response = requests.get(detail_url, params=detail_params)
@@ -143,10 +143,10 @@ class GetPlaceDetails(APIView):
     
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
-
+    print("starter")
     def get(self, request):
         place_id = request.query_params.get("place_id")
-
+        print(place_id)
         if not place_id:
             return Response({"detail": "Place ID is required"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -157,7 +157,7 @@ class GetPlaceDetails(APIView):
         detail_url = "https://maps.googleapis.com/maps/api/place/details/json"
         detail_params = {
             "place_id": place_id,
-            "fields": "name,formatted_address,geometry,photos,types,address_components,price_level",
+            "fields": "name,formatted_address,geometry,photos,types,price_level,user_ratings_total",
             "key": google_api_key
         }
 
@@ -170,9 +170,10 @@ class GetPlaceDetails(APIView):
         # Fetch all photo URL if available
         
         photos = place_details.get("photos", [])
-        
         lat, long = place_details.get("geometry", {}).get("location", {}).values()
+        print("lat: ", lat, "long: ", long)
         weather_url = f"https://api.openweathermap.org/data/3.0/onecall"
+        print("Wheather API: ", os.getenv("OPEN_WEATHER_API_KEY"))
         weather_params = {
             "lat": lat,
             "lon": long,

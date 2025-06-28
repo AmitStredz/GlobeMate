@@ -9,6 +9,7 @@ interface AuthContextType extends AuthState {
   verifyOTP: (otp: string) => Promise<string | true>;
   logout: () => void;
   pendingEmail: string | null;
+  refreshAccessToken: () => Promise<string | true>;
 }
 
 // Types for signup
@@ -31,28 +32,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token: undefined,
   });
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
-  // Load token and user from storage on mount
+  // Load token, refresh token, and user from storage on mount
   useEffect(() => {
     (async () => {
       const token = await AsyncStorage.getItem('accessToken');
       const user = await AsyncStorage.getItem('user');
-      if (token && user) {
+      const storedRefreshToken = await AsyncStorage.getItem('refreshToken');
+      if (token && user && storedRefreshToken) {
         setAuthState({
           user: JSON.parse(user),
           isAuthenticated: true,
           isLoading: false,
           token,
         });
+        setRefreshToken(storedRefreshToken);
       }
     })();
   }, []);
+
+  // Helper: decode JWT and check expiration
+  function isTokenExpired(token?: string) {
+    if (!token) return true;
+    try {
+      const [, payload] = token.split('.');
+      const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      if (!decoded.exp) return true;
+      return Date.now() / 1000 > decoded.exp - 30; // 30s leeway
+    } catch {
+      return true;
+    }
+  }
+
+  // Refresh access token using refresh token
+  const refreshAccessToken = async (): Promise<string | true> => {
+    if (!refreshToken) return 'No refresh token available';
+    try {
+      const res = await fetch(`${API_BASE_URL}/token/refresh/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh: refreshToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        logout();
+        return data.detail || 'Session expired. Please log in again.';
+      }
+      await AsyncStorage.setItem('accessToken', data.access);
+      setAuthState(prev => ({ ...prev, token: data.access }));
+      return true;
+    } catch (error) {
+      logout();
+      return 'Token refresh error: ' + (error instanceof Error ? error.message : 'Unknown error');
+    }
+  };
 
   // Real API call for login
   const login = async (email: string, password: string): Promise<string | true> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      const res = await fetch(`${API_BASE_URL}/login/`, {
+      const res = await fetch(`${API_BASE_URL}/user/auth/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -70,8 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthState(prev => ({ ...prev, isLoading: false }));
         return message;
       }
-      const token = data.access ;
+      const token = data.access;
+      const refresh = data.refresh;
       await AsyncStorage.setItem('accessToken', token);
+      await AsyncStorage.setItem('refreshToken', refresh);
       await AsyncStorage.setItem('user', JSON.stringify(data.user));
       setAuthState({
         user: data.user,
@@ -79,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         token,
       });
+      setRefreshToken(refresh);
       return true;
     } catch (error) {
       setAuthState(prev => ({ ...prev, isLoading: false }));
@@ -90,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = async (data: SignupPayload): Promise<string | true> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      const res = await fetch(`${API_BASE_URL}/signup/`, {
+      const res = await fetch(`${API_BASE_URL}/user/auth/signup/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -122,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
       if (!pendingEmail) return 'No email to verify';
-      const res = await fetch(`${API_BASE_URL}/verifyotp/`, {
+      const res = await fetch(`${API_BASE_URL}/user/auth/verifyotp/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: pendingEmail, otp }),
@@ -141,7 +184,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return message;
       }
       const token = data.access;
+      const refresh = data.refresh;
       await AsyncStorage.setItem('accessToken', token);
+      await AsyncStorage.setItem('refreshToken', refresh);
       await AsyncStorage.setItem('user', JSON.stringify(data.user));
       setAuthState({
         user: data.user,
@@ -149,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         token,
       });
+      setRefreshToken(refresh);
       setPendingEmail(null);
       return true;
     } catch (error) {
@@ -165,8 +211,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token: undefined,
     });
     setPendingEmail(null);
+    setRefreshToken(null);
     AsyncStorage.removeItem('accessToken');
+    AsyncStorage.removeItem('refreshToken');
     AsyncStorage.removeItem('user');
+  };
+
+  // Helper: fetch with auto-refresh
+  const fetchWithAuth = async (input: RequestInfo, init: RequestInit = {}) => {
+    let token: string | undefined = authState.token ?? undefined;
+    if (isTokenExpired(token)) {
+      const refreshResult = await refreshAccessToken();
+      if (refreshResult !== true) throw new Error(refreshResult as string);
+      const refreshedToken = await AsyncStorage.getItem('accessToken');
+      token = refreshedToken ?? undefined;
+    }
+    return fetch(input, {
+      ...init,
+      headers: {
+        ...(init.headers || {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
   };
 
   return (
@@ -177,6 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verifyOTP,
       logout,
       pendingEmail,
+      refreshAccessToken,
     }}>
       {children}
     </AuthContext.Provider>

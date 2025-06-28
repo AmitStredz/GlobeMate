@@ -19,8 +19,7 @@ import { Destination } from '@/types';
 import { Bell, MapPin } from 'lucide-react-native';
 import { API_BASE_URL } from '../../api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Modal from 'react-native-modal';
-import { FiExternalLink } from 'react-icons/fi';
+import { PlaceDetailsBottomSheet } from '@/components/PlaceDetailsBottomSheet';
 
 const DUMMY_IMAGE = 'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=800';
 
@@ -58,13 +57,14 @@ export default function Home() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [rawPlaces, setRawPlaces] = useState<any[]>([]);
   const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
   const insets = useSafeAreaInsets();
 
   const fetchFeed = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/getPlacesFromGoogleMap/`, {
+      const res = await fetch(`${API_BASE_URL}/user/places/getAllPlaces/`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -188,6 +188,7 @@ export default function Home() {
                     setSelectedDestination(destination);
                     setSelectedIndex(originalIdx);
                     setSelectedRaw(originalIdx !== -1 ? (rawPlaces?.[originalIdx] || null) : null);
+                    setBottomSheetVisible(true);
                   }}
                 />
               );
@@ -203,90 +204,11 @@ export default function Home() {
           </View>
         )}
       </ScrollView>
-      {/* Bottom Sheet Modal for Details */}
-      <Modal
-        isVisible={!!selectedDestination}
-        onBackdropPress={() => { setSelectedDestination(null); setSelectedRaw(null); setSelectedIndex(null); }}
-        onSwipeComplete={() => { setSelectedDestination(null); setSelectedRaw(null); setSelectedIndex(null); }}
-        swipeDirection={['down']}
-        style={{ justifyContent: 'flex-end', margin: 0 }}
-        backdropOpacity={0.4}
-      >
-        <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 0, minHeight: 400, overflow: 'hidden' }}>
-          {/* Top close button */}
-          <Pressable onPress={() => { setSelectedDestination(null); setSelectedRaw(null); setSelectedIndex(null); }} style={{ position: 'absolute', top: 18, right: 18, zIndex: 2, backgroundColor: '#F3F4F6', borderRadius: 20, width: 36, height: 36, alignItems: 'center', justifyContent: 'center', elevation: 2 }}>
-            <Text style={{ fontSize: 22, color: '#374151', fontWeight: 700 }}>✕</Text>
-          </Pressable>
-          <View style={{ alignItems: 'center', paddingTop: 32, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
-            <Pressable onPress={() => setImageModalVisible(true)}>
-              <Image source={{ uri: selectedDestination?.image }} style={{ width: 200, height: 200, borderRadius: 18, marginBottom: 10, borderWidth: 2, borderColor: '#F3F4F6', resizeMode: 'cover' }} />
-            </Pressable>
-            <Text style={{ fontSize: 24, fontWeight: 700, color: '#111827', marginBottom: 2, textAlign: 'center' }}>{selectedDestination?.title}</Text>
-            <Text style={{ fontSize: 16, color: '#6B7280', marginBottom: 4, textAlign: 'center' }}>{selectedDestination?.location}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-              <Text style={{ fontSize: 18, color: '#F59E0B', fontWeight: 700 }}>★ {selectedDestination?.rating}</Text>
-              <Text style={{ fontSize: 15, color: '#6B7280' }}>({selectedRaw?.user_ratings_total || 0} reviews)</Text>
-            </View>
-          </View>
-          {selectedRaw && (
-            <View style={{ padding: 20, paddingTop: 12 }}>
-              <Text style={{ ...LABEL_STYLE, fontSize: 16, marginBottom: 10 } as any}>Details</Text>
-              <View style={{ flexDirection: 'row', marginBottom: 14 }}>
-                <View style={[PILL_STYLE, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E0F2FE' }]}> 
-                  <Text style={{ color: '#0369A1', fontWeight: 700, marginRight: 4 }}>Latitude:</Text>
-                  <Text style={{ color: '#0369A1', fontWeight: 600 }}>{selectedRaw.geometry?.location?.lat ?? 'N/A'}</Text>
-                </View>
-                <View style={[PILL_STYLE, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF9C3' }]}> 
-                  <Text style={{ color: '#CA8A04', fontWeight: 700, marginRight: 4 }}>Longitude:</Text>
-                  <Text style={{ color: '#CA8A04', fontWeight: 600 }}>{selectedRaw.geometry?.location?.lng ?? 'N/A'}</Text>
-                </View>
-              </View>
-              <View style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 14, marginBottom: 14 }}>
-                <Text style={{ ...LABEL_STYLE, marginBottom: 2 }}>Address</Text>
-                <Text style={VALUE_STYLE as any}>{selectedRaw.formatted_address}</Text>
-              </View>
-              <View style={{ marginBottom: 14 }}>
-                <Text style={LABEL_STYLE as any}>Types</Text>
-                <Text style={{ ...VALUE_STYLE, fontWeight: 500, fontSize: 14 } as any}>{selectedRaw.types?.join(', ')}</Text>
-              </View>
-              <View style={{ marginBottom: 14 }}>
-                {selectedRaw.url ? (
-                  <TouchableOpacity onPress={() => { selectedRaw.url && Linking.openURL(selectedRaw.url); }} style={{ backgroundColor: '#E0E7FF', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, alignSelf: 'flex-start', marginTop: 4, flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{ color: '#3730A3', fontWeight: 700, fontSize: 15 }}>Open in Maps</Text>
-                    <FiExternalLink style={{ color: '#3730A3', fontSize: 18, marginLeft: 6 }} />
-                  </TouchableOpacity>
-                ) : (
-                  <Text style={{ color: '#6B7280' }}>N/A</Text>
-                )}
-              </View>
-              <View style={{ marginTop: 10, marginBottom: 4 }}>
-                <Text style={{ ...LABEL_STYLE, fontSize: 15, marginBottom: 6 } as any}>Categories</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  {selectedRaw.types?.map((type: string) => (
-                    <View key={type} style={{ backgroundColor: '#E0E7FF', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginRight: 6, marginBottom: 6 }}>
-                      <Text style={{ color: '#3730A3', fontWeight: 500, fontSize: 13 }}>{type}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            </View>
-          )}
-        </View>
-      </Modal>
-      {/* Fullscreen image modal */}
-      <Modal
-        isVisible={imageModalVisible}
-        onBackdropPress={() => setImageModalVisible(false)}
-        style={{ justifyContent: 'center', alignItems: 'center' }}
-        backdropOpacity={0.95}
-      >
-        <View style={{ backgroundColor: 'rgba(0,0,0,0.95)', borderRadius: 18, padding: 20 }}>
-          <Pressable style={{ position: 'absolute', top: 20, right: 20, zIndex: 2 }} onPress={() => setImageModalVisible(false)}>
-            <Text style={{ color: '#fff', fontSize: 22, fontWeight: 700 }}>✕</Text>
-          </Pressable>
-          <Image source={{ uri: selectedDestination?.image }} style={{ width: '100%', height: '100%', borderRadius: 18, resizeMode: 'contain' }} />
-        </View>
-      </Modal>
+      <PlaceDetailsBottomSheet
+        visible={bottomSheetVisible}
+        place={selectedRaw}
+        onClose={() => setBottomSheetVisible(false)}
+      />
     </SafeAreaView>
   );
 }
