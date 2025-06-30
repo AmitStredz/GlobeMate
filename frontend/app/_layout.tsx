@@ -13,7 +13,7 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 // import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 SplashScreen.preventAutoHideAsync();
@@ -26,6 +26,7 @@ export default function RootLayout() {
     'Inter-SemiBold': Inter_600SemiBold,
     'Inter-Bold': Inter_700Bold,
   });
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -38,7 +39,7 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, paddingTop: insets.top || 16 }}>
       <SafeAreaProvider>
         <BottomSheetModalProvider>
           <AuthProvider>

@@ -36,6 +36,7 @@ import {
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
+import {attributes, hotels, localHosts, restaurants} from './dummyData'
 
 interface PlaceDetailsBottomSheetProps {
   visible: boolean;
@@ -47,10 +48,14 @@ export const PlaceDetailsBottomSheet: React.FC<
   PlaceDetailsBottomSheetProps
 > = ({ visible, place, onClose }) => {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ['60%', '95%'], []);
+  const snapPoints = useMemo(() => ['65%', '90%'], []);
   const [weather, setWeather] = useState<any>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
+
+  // Place photos state
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
 
   // Backdrop component
   const renderBackdrop = useCallback(
@@ -130,8 +135,7 @@ export const PlaceDetailsBottomSheet: React.FC<
       try {
         const apiKey =
           process.env.REACT_NATIVE_OPEN_WEATHER_API_KEY ||
-          process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY ||
-          '8ca38e8254b471d2f2bc34637d090fa4';
+          process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY;
         if (!apiKey) throw new Error('No OpenWeather API key found in env');
         const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&exclude=alerts,hourly,minutely`;
         const res = await fetch(url);
@@ -149,61 +153,40 @@ export const PlaceDetailsBottomSheet: React.FC<
     }
   }, [visible, place]);
 
+  // Fetch Google Place Photos when visible and place changes
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      setPhotoUrls([]);
+      if (!place?.photos || !Array.isArray(place.photos) || place.photos.length === 0) return;
+      setPhotosLoading(true);
+      const apiKey = process.env.GOOGLE_API_KEY;
+      if (!apiKey) {
+        setPhotosLoading(false);
+        return;
+      }
+      const urls: string[] = [];
+      for (const photo of place.photos) {
+        if (!photo.photo_reference) continue;
+        const params = new URLSearchParams({
+          maxwidth: '800',
+          photoreference: photo.photo_reference,
+          key: apiKey,
+        });
+        const url = `https://maps.googleapis.com/maps/api/place/photo?${params.toString()}`;
+        urls.push(url);
+        setPhotoUrls((prev) => [...prev, url]); // Add as we go for progressive loading
+      }
+      setPhotosLoading(false);
+    };
+    if (visible && place?.photos?.length) {
+      fetchPhotos();
+    } else {
+      setPhotoUrls([]);
+    }
+  }, [visible, place]);
+
   if (!place) return null;
 
-  // Dummy local hosts data
-  const localHosts = [
-    {
-      id: 'host1',
-      name: 'Amit Sharma',
-      photo: 'https://randomuser.me/api/portraits/men/32.jpg',
-      phone: '+91 98765 43210',
-      location: place.formatted_address || 'Current Location',
-      type: 'Guide',
-      services: ['City Tours', 'Food Walks'],
-      messagingOptIn: true,
-    },
-    {
-      id: 'host2',
-      name: 'Priya Verma',
-      photo: 'https://randomuser.me/api/portraits/women/44.jpg',
-      phone: '+91 91234 56789',
-      location: place.formatted_address || 'Current Location',
-      type: 'Local Friend',
-      services: ['Shopping Help', 'Cultural Exchange'],
-      messagingOptIn: true,
-    },
-    {
-      id: 'host3',
-      name: 'John Lee',
-      photo: 'https://randomuser.me/api/portraits/men/65.jpg',
-      phone: '+91 99887 77665',
-      location: place.formatted_address || 'Current Location',
-      type: 'Transport',
-      services: ['Airport Pickup', 'Local Rides'],
-      messagingOptIn: false,
-    },
-    {
-      id: 'host4',
-      name: 'Sara Ali',
-      photo: 'https://randomuser.me/api/portraits/women/68.jpg',
-      phone: '+91 90000 12345',
-      location: place.formatted_address || 'Current Location',
-      type: 'Foodie',
-      services: ['Home Meals', 'Cooking Classes'],
-      messagingOptIn: true,
-    },
-    {
-      id: 'host5',
-      name: 'Carlos Mendes',
-      photo: 'https://randomuser.me/api/portraits/men/80.jpg',
-      phone: '+91 91111 22222',
-      location: place.formatted_address || 'Current Location',
-      type: 'Adventure',
-      services: ['Trekking', 'Outdoor Activities'],
-      messagingOptIn: true,
-    },
-  ];
 
   const handleCallHost = (phone: string) => {
     Linking.openURL(`tel:${phone.replace(/\s+/g, '')}`);
@@ -230,27 +213,57 @@ export const PlaceDetailsBottomSheet: React.FC<
         contentContainerStyle={{ paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Photo Section */}
-        {place.photo_url && (
-          <Image
-            source={{ uri: place.photo_url }}
-            style={styles.placePhoto}
-            resizeMode="cover"
-          />
-        )}
+        {/* Photo Gallery Section */}
+        {photoUrls.length > 0 ? (
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    style={{ width: '100%', backgroundColor: '#F0F0F0' }}
+    contentContainerStyle={{ 
+      alignItems: 'center', 
+      paddingVertical: 8, 
+      paddingHorizontal: 8 
+    }}
+  >
+    {photoUrls.map((url, idx) => (
+      <Image
+        key={url + idx}
+        source={{ uri: url }}
+        style={[styles.galleryPhoto, { marginRight: idx === photoUrls.length - 1 ? 0 : 12 }]}
+        resizeMode="cover"
+        // defaultSource={require('../assets/images/placeholder.png')}
+      />
+    ))}
+    {photosLoading && (
+      <View style={[styles.galleryLoading, { marginLeft: photoUrls.length > 0 ? 12 : 0 }]}>
+        <ActivityIndicator size="small" color="#1E90FF" />
+      </View>
+    )}
+  </ScrollView>
+) : place?.photo_url ? (
+  <Image
+    source={{ uri: place?.photo_url }}
+    style={styles.placePhoto}
+    resizeMode="cover"
+  />
+) : (
+  <View style={[styles.placePhoto, { alignItems: 'center', justifyContent: 'center' }]}> 
+    <Text style={{ color: '#888' }}>No photos available</Text>
+  </View>
+)}
         {/* Header Section */}
         <View style={styles.header}>
           <Text style={styles.title} numberOfLines={2}>
-            {place.name}
+            {place?.name}
           </Text>
-          {place.rating && (
+          {place?.rating && (
             <View style={styles.ratingContainer}>
               <View style={styles.ratingBadge}>
                 <Star size={16} color="#FFD700" fill="#FFD700" />
                 <Text style={styles.ratingText}>{place.rating}</Text>
               </View>
               <Text style={styles.reviewCount}>
-                ({place.user_ratings_total?.toLocaleString() || 0} reviews)
+                ({place?.user_ratings_total?.toLocaleString() || 0} reviews)
               </Text>
             </View>
           )}
@@ -262,11 +275,11 @@ export const PlaceDetailsBottomSheet: React.FC<
             <MapPin size={20} color="#4A90E2" />
             <Text style={styles.cardTitle}>Location</Text>
           </View>
-          <Text style={styles.address}>{place.formatted_address}</Text>
-          {place.geometry?.location && (
+          <Text style={styles.address}>{place?.formatted_address}</Text>
+          {place?.geometry?.location && (
             <Text style={styles.coordinates}>
-              {place.geometry.location.lat.toFixed(6)},{' '}
-              {place.geometry.location.lng.toFixed(6)}
+              {place?.geometry?.location?.lat?.toFixed(6)},{' '}
+              {place?.geometry?.location?.lng?.toFixed(6)}
             </Text>
           )}
         </View>
@@ -464,12 +477,12 @@ export const PlaceDetailsBottomSheet: React.FC<
             nestedScrollEnabled={true}
             contentContainerStyle={{ gap: 12, paddingHorizontal: 4 }}
           >
-            {localHosts.map((host) => (
+            {localHosts?.map((host) => (
               <View key={host.id} style={styles.hostCard}>
                 <Image source={{ uri: host.photo }} style={styles.hostPhoto} />
                 <Text style={styles.hostName} numberOfLines={1}>{host.name}</Text>
                 <Text style={styles.hostType}>{host.type}</Text>
-                <Text style={styles.hostLocation} numberOfLines={1}>{host.location}</Text>
+                <Text style={styles.hostLocation} numberOfLines={1}>{place?.formatted_address || host?.location}</Text>
                 <View style={styles.hostServicesContainer}>
                   {host.services.map((srv: string, idx: number) => (
                     <Text key={idx} style={styles.hostService}>{srv}</Text>
@@ -498,6 +511,84 @@ export const PlaceDetailsBottomSheet: React.FC<
                   ]}>
                     {host.messagingOptIn ? 'Message' : 'No Messaging'}
                   </Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Nearby Hotels Section */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Globe size={20} color="#FF6B6B" />
+            <Text style={styles.cardTitle}>Nearby Hotels</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled={true}
+            contentContainerStyle={{ gap: 12, paddingHorizontal: 4 }}
+          >
+            {hotels?.map((hotel) => (
+              <View key={hotel.id} style={styles.amenityCard}>
+                <Image source={{ uri: hotel.photo }} style={styles.amenityPhoto} />
+                <Text style={styles.amenityName} numberOfLines={1}>{hotel.name}</Text>
+                <Text style={styles.amenityType}>{hotel.type}</Text>
+                <Text style={styles.amenityDistance}>{hotel.distance} away</Text>
+                <TouchableOpacity style={styles.amenityBtn} activeOpacity={0.8}>
+                  <Text style={styles.amenityBtnText}>View</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Nearby Restaurants Section */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Tag size={20} color="#4ECDC4" />
+            <Text style={styles.cardTitle}>Nearby Restaurants</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled={true}
+            contentContainerStyle={{ gap: 12, paddingHorizontal: 4 }}
+          >
+            {restaurants?.map((rest) => (
+              <View key={rest.id} style={styles.amenityCard}>
+                <Image source={{ uri: rest.photo }} style={styles.amenityPhoto} />
+                <Text style={styles.amenityName} numberOfLines={1}>{rest.name}</Text>
+                <Text style={styles.amenityType}>{rest.type}</Text>
+                <Text style={styles.amenityDistance}>{rest.distance} away</Text>
+                <TouchableOpacity style={styles.amenityBtn} activeOpacity={0.8}>
+                  <Text style={styles.amenityBtnText}>View</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Other Attractions & Amenities Section */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Compass size={20} color="#FFA500" />
+            <Text style={styles.cardTitle}>Other Attractions & Amenities</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled={true}
+            contentContainerStyle={{ gap: 12, paddingHorizontal: 4 }}
+          >
+            {attributes?.map((attr) => (
+              <View key={attr.id} style={styles.amenityCard}>
+                <Image source={{ uri: attr.photo }} style={styles.amenityPhoto} />
+                <Text style={styles.amenityName} numberOfLines={1}>{attr.name}</Text>
+                <Text style={styles.amenityType}>{attr.type}</Text>
+                <Text style={styles.amenityDistance}>{attr.distance} away</Text>
+                <TouchableOpacity style={styles.amenityBtn} activeOpacity={0.8}>
+                  <Text style={styles.amenityBtnText}>View</Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -890,5 +981,71 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 13,
     textAlign: 'center',
+  },
+  amenityCard: {
+    width: 160,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 10,
+    marginRight: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  amenityPhoto: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: '#E0E0E0',
+  },
+  amenityName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  amenityType: {
+    fontSize: 12,
+    color: '#888',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  amenityDistance: {
+    fontSize: 12,
+    color: '#1E90FF',
+    marginBottom: 4,
+  },
+  amenityBtn: {
+    backgroundColor: '#1E90FF',
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    marginTop: 2,
+  },
+  amenityBtnText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  galleryPhoto: {
+    width: width * 0.8,
+    height: 200,
+    borderRadius: 16,
+    marginRight: 12,
+    backgroundColor: '#E0E0E0',
+  },
+  galleryLoading: {
+    width: 60,
+    height: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
