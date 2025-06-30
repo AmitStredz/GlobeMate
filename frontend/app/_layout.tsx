@@ -10,10 +10,11 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '@/hooks/useAuth';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+// import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 SplashScreen.preventAutoHideAsync();
 
