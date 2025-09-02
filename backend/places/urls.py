@@ -1,9 +1,9 @@
 from django.urls import path
-from .views import GetAllPlaces, GetPlaceDetails
-
+from .views import PlacesListView, PlaceDetailView, ToggleFavoriteView, UserFavoritesView
 
 urlpatterns = [
-    # path('getPlaces/', FilteredPlacesView.as_view(), name='user-get-places'),
-    path('getAllPlaces/', GetAllPlaces.as_view(), name='get-all-places'),
-    path('getPlaceDetails/', GetPlaceDetails.as_view(), name='get-one-place-details'),
+    path('', PlacesListView.as_view(), name='places-list'),
+    path('details/', PlaceDetailView.as_view(), name='place-details'),
+    path('favorites/toggle/', ToggleFavoriteView.as_view(), name='toggle-favorite'),
+    path('favorites/', UserFavoritesView.as_view(), name='user-favorites'),
 ]

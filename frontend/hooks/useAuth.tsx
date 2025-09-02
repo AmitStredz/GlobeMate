@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<string | true> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      const res = await fetch(`${API_BASE_URL}/user/auth/login/`, {
+      const res = await fetch(`${API_BASE_URL}/auth/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = async (data: SignupPayload): Promise<string | true> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      const res = await fetch(`${API_BASE_URL}/user/auth/signup/`, {
+      const res = await fetch(`${API_BASE_URL}/auth/signup/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
       if (!pendingEmail) return 'No email to verify';
-      const res = await fetch(`${API_BASE_URL}/user/auth/verifyotp/`, {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-otp/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: pendingEmail, otp }),
@@ -183,8 +183,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthState(prev => ({ ...prev, isLoading: false }));
         return message;
       }
-      const token = data.access;
-      const refresh = data.refresh;
+      const token = data?.tokens?.access;
+      const refresh = data?.tokens?.refresh;
       await AsyncStorage.setItem('accessToken', token);
       await AsyncStorage.setItem('refreshToken', refresh);
       await AsyncStorage.setItem('user', JSON.stringify(data.user));

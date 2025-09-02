@@ -240,9 +240,9 @@ export const PlaceDetailsBottomSheet: React.FC<
       </View>
     )}
   </ScrollView>
-) : place?.photo_url ? (
+) : place?.first_photo_url ? (
   <Image
-    source={{ uri: place?.photo_url }}
+    source={{ uri: place?.first_photo_url }}
     style={styles.placePhoto}
     resizeMode="cover"
   />
@@ -596,14 +596,14 @@ export const PlaceDetailsBottomSheet: React.FC<
         </View>
 
         {/* Place Types */}
-        {place.types && place.types.length > 0 && (
+        {place.place_types && place.place_types.length > 0 && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Tag size={20} color="#9B59B6" />
               <Text style={styles.cardTitle}>Categories</Text>
             </View>
             <View style={styles.tagsContainer}>
-              {place.types.slice(0, 6).map((type: string, index: number) => (
+              {place.place_types.slice(0, 6).map((type: string, index: number) => (
                 <View
                   key={index}
                   style={[

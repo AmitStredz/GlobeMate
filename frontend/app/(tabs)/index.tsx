@@ -64,7 +64,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/user/places/getAllPlaces/`, {
+      const res = await fetch(`${API_BASE_URL}/places/`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -92,12 +92,12 @@ export default function Home() {
           id: place.name + idx,
           title: place.name || 'Unknown Place',
           location: place.formatted_address || 'Unknown',
-          description: place.types?.join(', ') || 'No description',
-          image: place.photo_url || DUMMY_IMAGE,
+          description: place.description|| 'No description',
+          image: place.first_photo_url || DUMMY_IMAGE,
           price: '',
           rating: place.rating || 0,
-          category: place.types?.[0] || 'General',
-          tags: place.types || [],
+          category: place.place_types?.[0] || 'General',
+          tags: place.place_types || [],
         };
       });
       setDestinations(mapped);

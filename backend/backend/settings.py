@@ -42,10 +42,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'places',  # Your custom app for places
-    'authentication',  # Your custom app for authentication
+    
+    # Third party apps
     'rest_framework',
     'corsheaders',
+    
+    # Local apps
+    'authentication',    # User authentication and profiles
+    'preferences',       # User preferences and location data  
+    'places',           # Places and travel destinations
 ]
 
 MIDDLEWARE = [
