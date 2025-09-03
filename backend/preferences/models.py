@@ -15,8 +15,8 @@ DISTRICT_CHOICES = [
     ('MLP', 'Malappuram'),
     ('KKD', 'Kozhikode'),
     ('WYD', 'Wayanad'),
-    ('KGD', 'Kannur'),
-    ('KNR', 'Kasargod'),
+    ('KGD', 'Kasaragod'),
+    ('KNR', 'Kannur'),
 ]
 
 class District(models.Model):

@@ -60,7 +60,9 @@ export default function Profile() {
             <View style={styles.profileInfo}>
               <Text style={styles.name}>{user?.username}</Text>
               <Text style={styles.email}>{user?.email}</Text>
-              <Text style={styles.email}>{user?.gender == 'M'?"Male":"Female"}</Text>
+              <Text style={styles.email}>
+                {user?.profile?.gender === 'M' ? 'Male' : user?.profile?.gender === 'F' ? 'Female' : 'Other'}
+              </Text>
             </View>
           </View>
         </View>

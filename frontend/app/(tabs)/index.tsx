@@ -7,43 +7,18 @@ import {
   ScrollView, 
   TouchableOpacity,
   RefreshControl,
-  Image,
-  Linking,
-  Platform,
-  Pressable,
+  Alert,
 } from 'react-native';
 import { DestinationCard } from '@/components/DestinationCard';
 import { SearchBar } from '@/components/SearchBar';
 import { useAuth } from '@/hooks/useAuth';
-import { Destination } from '@/types';
+import { Destination, Place } from '@/types';
 import { Bell, MapPin } from 'lucide-react-native';
-import { API_BASE_URL } from '../../api';
+import { placesAPI } from '@/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlaceDetailsBottomSheet } from '@/components/PlaceDetailsBottomSheet';
 
 const DUMMY_IMAGE = 'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=800';
-
-const PILL_STYLE = {
-  backgroundColor: '#EEF2FF',
-  borderRadius: 16,
-  paddingHorizontal: 14,
-  paddingVertical: 6,
-  marginRight: 8,
-  marginBottom: 8,
-};
-
-const LABEL_STYLE = {
-  fontWeight: 700,
-  color: '#1E40AF',
-  fontSize: 13,
-  marginBottom: 2,
-};
-
-const VALUE_STYLE = {
-  color: '#111827',
-  fontWeight: 600,
-  fontSize: 15,
-};
 
 export default function Home() {
   const { user, token } = useAuth();
@@ -53,56 +28,53 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
-  const [selectedRaw, setSelectedRaw] = useState<any>(null); // For showing all details in modal
+  const [selectedRaw, setSelectedRaw] = useState<Place | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [rawPlaces, setRawPlaces] = useState<any[]>([]);
-  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [rawPlaces, setRawPlaces] = useState<Place[]>([]);
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
   const insets = useSafeAreaInsets();
 
   const fetchFeed = useCallback(async () => {
+    if (!token) {
+      setError('Please log in to view places');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    
     try {
-      const res = await fetch(`${API_BASE_URL}/places/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
-      let data;
-      try {
-        data = await res.json();
-      } catch (jsonErr) {
-        throw new Error('Invalid server response');
-      }
-      if (!res.ok) {
-        if (data && typeof data === 'object' && data.detail) {
-          throw new Error(data.detail);
-        } else {
-          throw new Error(`API error: ${res.status}`);
-        }
-      }
-      // Map API response to Destination[]
+      const data = await placesAPI.getPlaces();
       const places = data.places || [];
       setRawPlaces(places);
-      const mapped: Destination[] = places.map((place: any, idx: number) => {
-        return {
-          id: place.name + idx,
-          title: place.name || 'Unknown Place',
-          location: place.formatted_address || 'Unknown',
-          description: place.description|| 'No description',
-          image: place.first_photo_url || DUMMY_IMAGE,
-          price: '',
-          rating: place.rating || 0,
-          category: place.place_types?.[0] || 'General',
-          tags: place.place_types || [],
-        };
-      });
+      
+      // Map API response to Destination[]
+      const mapped: Destination[] = places.map((place: Place, idx: number) => ({
+        id: place.place_id || `${place.name}-${idx}`,
+        title: place.name || 'Unknown Place',
+        location: place.formatted_address || 'Unknown',
+        description: place.description || 'No description available',
+        image: place.first_photo_url || DUMMY_IMAGE,
+        price: '', // Price not available from places API
+        rating: place.rating || 0,
+        category: place.place_types?.[0]?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'General',
+        tags: place.place_types || [],
+      }));
+      
       setDestinations(mapped);
     } catch (err: any) {
-      setError(err.message || 'Unknown error');
+      console.error('Error fetching places:', err);
+      setError(err.message || 'Failed to load places');
+      
+      // Show alert for authentication errors
+      if (err.message.includes('Session expired') || err.message.includes('authentication')) {
+        Alert.alert(
+          'Session Expired',
+          'Please log in again to continue.',
+          [{ text: 'OK' }]
+        );
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -116,7 +88,8 @@ export default function Home() {
   const filteredDestinations = destinations.filter(destination =>
     destination.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     destination.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    destination.category.toLowerCase().includes(searchQuery.toLowerCase())
+    destination.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    destination.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const onRefresh = async () => {
@@ -124,12 +97,26 @@ export default function Home() {
     await fetchFeed();
   };
 
+  const handleDestinationPress = useCallback((destination: Destination, idx: number) => {
+    setSelectedDestination(destination);
+    setSelectedIndex(idx);
+    setSelectedRaw(rawPlaces[idx] || null);
+    setBottomSheetVisible(true);
+  }, [rawPlaces]);
+
+  const handleBottomSheetClose = useCallback(() => {
+    setBottomSheetVisible(false);
+    setSelectedDestination(null);
+    setSelectedRaw(null);
+    setSelectedIndex(null);
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top || 16 }]}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.greeting}>Hello, {user?.username}! 👋</Text>
+            <Text style={styles.greeting}>Hello, {user?.username || 'Traveler'}! 👋</Text>
             <View style={styles.locationContainer}>
               <MapPin size={16} color="#6B7280" />
               <Text style={styles.location}>Where would you like to go?</Text>
@@ -143,7 +130,10 @@ export default function Home() {
         <SearchBar
           value={searchQuery}
           onChangeText={setSearchQuery}
-          onFilterPress={() => {}}
+          onFilterPress={() => {
+            // TODO: Implement filter functionality
+            console.log('Filter pressed');
+          }}
         />
       </View>
 
@@ -162,52 +152,50 @@ export default function Home() {
         </View>
 
         {loading ? (
-          <View style={{ alignItems: 'center', padding: 32 }}>
-            <Text>Loading...</Text>
+          <View style={styles.centerContainer}>
+            <Text style={styles.loadingText}>Loading amazing places...</Text>
           </View>
         ) : error ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Error</Text>
+            <Text style={styles.emptyTitle}>Oops! Something went wrong</Text>
             <Text style={styles.emptyText}>{error}</Text>
-            <TouchableOpacity onPress={fetchFeed} style={{ marginTop: 16 }}>
-              <Text style={{ color: '#1E40AF', fontWeight: '600' }}>Retry</Text>
+            <TouchableOpacity onPress={fetchFeed} style={styles.retryButton}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
             </TouchableOpacity>
+          </View>
+        ) : filteredDestinations.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>
+              {searchQuery ? 'No places found' : 'No destinations available'}
+            </Text>
+            <Text style={styles.emptyText}>
+              {searchQuery 
+                ? 'Try adjusting your search terms or clear the search to see all places' 
+                : 'Check back later for new destinations'}
+            </Text>
+            {searchQuery && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Clear Search</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <View style={styles.destinationsContainer}>
-            {filteredDestinations.map((destination, idx) => {
-              // Find the index in the original destinations array
-              const originalIdx = destinations.findIndex(
-                d => d.title === destination.title && d.location === destination.location && d.image === destination.image
-              );
-              return (
-                <DestinationCard
-                  key={idx}
-                  destination={destination}
-                  onPress={() => {
-                    setSelectedDestination(destination);
-                    setSelectedIndex(originalIdx);
-                    setSelectedRaw(originalIdx !== -1 ? (rawPlaces?.[originalIdx] || null) : null);
-                    setBottomSheetVisible(true);
-                  }}
-                />
-              );
-            })}
-            {filteredDestinations.length === 0 && (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>No destinations found</Text>
-                <Text style={styles.emptyText}>
-                  Try adjusting your search or explore our featured destinations
-                </Text>
-              </View>
-            )}
+            {filteredDestinations.map((destination, idx) => (
+              <DestinationCard
+                key={destination.id}
+                destination={destination}
+                onPress={() => handleDestinationPress(destination, destinations.indexOf(destination))}
+              />
+            ))}
           </View>
         )}
       </ScrollView>
+      
       <PlaceDetailsBottomSheet
         visible={bottomSheetVisible}
         place={selectedRaw}
-        onClose={() => setBottomSheetVisible(false)}
+        onClose={handleBottomSheetClose}
       />
     </SafeAreaView>
   );
@@ -273,6 +261,17 @@ const styles = StyleSheet.create({
   destinationsContainer: {
     paddingHorizontal: 24,
   },
+  centerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -284,11 +283,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptyText: {
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#1E40AF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

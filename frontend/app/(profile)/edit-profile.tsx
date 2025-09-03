@@ -24,16 +24,18 @@ export default function EditProfile() {
         <Text style={styles.value}>{user?.username}</Text>
         <Text style={styles.label}>Email</Text>
         <Text style={styles.value}>{user?.email}</Text>
+        <Text style={styles.label}>Age</Text>
+        <Text style={styles.value}>{user?.profile?.age}</Text>
         <Text style={styles.label}>Gender</Text>
-        <Text style={styles.value}>{user?.gender == 'M'?"Male":"Female"}</Text>
+        <Text style={styles.value}>{user?.profile?.gender === 'M' ? 'Male' : user?.profile?.gender === 'F' ? 'Female' : 'Other'}</Text>
       </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Preferred Districts</Text>
         <View style={styles.preferencesContainer}>
-          {user?.preferred_districts?.length ? user.preferred_districts.map((preference, idx) => (
+          {user?.preferences?.preferred_districts?.length ? user.preferences.preferred_districts.map((preference, idx) => (
             <View key={idx} style={[styles.preferenceTag, { backgroundColor: '#6366F1', shadowColor: '#6366F1' }]}> 
               <Text style={styles.preferenceText}>
-                {typeof preference === 'object' && preference !== null ? preference.code : preference}
+                {typeof preference === 'object' && preference !== null ? preference.name : preference}
               </Text>
             </View>
           )) : <Text style={styles.emptyText}>No preferred districts</Text>}
@@ -42,10 +44,10 @@ export default function EditProfile() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Preferred Geographies</Text>
         <View style={styles.preferencesContainer}>
-          {user?.preferred_geographies?.length ? user.preferred_geographies.map((preference, idx) => (
+          {user?.preferences?.preferred_geographies?.length ? user.preferences.preferred_geographies.map((preference, idx) => (
             <View key={idx} style={[styles.preferenceTag, { backgroundColor: '#10B981', shadowColor: '#10B981' }]}> 
               <Text style={styles.preferenceText}>
-                {typeof preference === 'object' && preference !== null ? preference.code : preference}
+                {typeof preference === 'object' && preference !== null ? preference.name : preference}
               </Text>
             </View>
           )) : <Text style={styles.emptyText}>No preferred geographies</Text>}

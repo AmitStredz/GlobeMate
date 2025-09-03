@@ -63,7 +63,11 @@ export default function VerifyOTP() {
           <View style={styles.otpContainer}>
             <Text style={styles.label}>Verification Code</Text>
             <TextInput
-              style={[styles.otpInput, error && styles.otpInputError]}
+              style={[styles.otpInput, error && styles.otpInputError, {
+                textAlign: "center",
+                fontSize: 24,
+                letterSpacing: 8,
+              }]}
               placeholder="123456"
               placeholderTextColor="#9CA3AF"
               value={otp}
@@ -73,9 +77,6 @@ export default function VerifyOTP() {
               }}
               keyboardType="numeric"
               maxLength={6}
-              textAlign="center"
-              fontSize={24}
-              letterSpacing={8}
             />
             {error && <Text style={styles.error}>{error}</Text>}
           </View>

@@ -1,4 +1,5 @@
 // This file contains static options for districts, geographies, and genders
+// These should match the backend models exactly
 export const DISTRICTS = [
   { code: 'TVM', name: 'Thiruvananthapuram' },
   { code: 'KLM', name: 'Kollam' },
@@ -17,24 +18,31 @@ export const DISTRICTS = [
 ];
 
 export const GEOGRAPHIES = [
-  { code: 'FRST', name: 'Forest' },
-  { code: 'SEA', name: 'Sea' },
-  { code: 'SPR', name: 'Spring' },
-  { code: 'REEF', name: 'Reef' },
-  { code: 'HTSPR', name: 'Hot Spring' },
-  { code: 'GEYSER', name: 'Geyser' },
-  { code: 'WTR', name: 'Water Body' },
-  { code: 'PEAK', name: 'Mountain Peak' },
-  { code: 'GLCR', name: 'Glacier' },
-  { code: 'CLFF', name: 'Cliff' },
-  { code: 'ROCK', name: 'Rock Formation' },
+  { code: 'ADV', name: 'Adventure Sports' },
+  { code: 'BEACH', name: 'Beach & Coastal' },
   { code: 'CAVE', name: 'Cave Entrance' },
-  { code: 'MNTN', name: 'Mountain Region' },
+  { code: 'CLFF', name: 'Cliff' },
+  { code: 'CULT', name: 'Cultural Sites' },
   { code: 'DUNE', name: 'Sand Dune' },
-  { code: 'SAND', name: 'Sandy Area' },
-  { code: 'PRTA', name: 'Protected Area' },
+  { code: 'FRST', name: 'Forests & Wildlife' },
+  { code: 'GEYSER', name: 'Geyser' },
+  { code: 'GLCR', name: 'Glacier' },
+  { code: 'HILL', name: 'Hills & Mountains' },
+  { code: 'HIST', name: 'Historical Sites' },
+  { code: 'HTSPR', name: 'Hot Spring' },
+  { code: 'LAKE', name: 'Lakes & Backwaters' },
+  { code: 'MNTN', name: 'Mountain Region' },
   { code: 'NTLPRK', name: 'National Park' },
   { code: 'NTRL', name: 'Natural Area' },
+  { code: 'PEAK', name: 'Mountain Peak' },
+  { code: 'PRTA', name: 'Protected Area' },
+  { code: 'REEF', name: 'Reef' },
+  { code: 'ROCK', name: 'Rock Formation' },
+  { code: 'SAND', name: 'Sandy Area' },
+  { code: 'SEA', name: 'Sea' },
+  { code: 'SPR', name: 'Spring' },
+  { code: 'SPRT', name: 'Spiritual Places' },
+  { code: 'WTR', name: 'Water Body' },
 ];
 
 export const GENDERS = [
