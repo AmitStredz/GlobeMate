@@ -10,6 +10,7 @@ interface AuthContextType extends AuthState {
   logout: () => void;
   pendingEmail: string | null;
   refreshAccessToken: () => Promise<string | true>;
+  refreshUserData: () => Promise<void>;
 }
 
 // Types for signup
@@ -81,18 +82,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     try {
       const data = await authAPI.login(email, password);
-      
-      await AsyncStorage.setItem('accessToken', data.access);
-      await AsyncStorage.setItem('refreshToken', data.refresh);
+      console.log("Login response:", data);
+      console.log("Setting user data");
+
+      await AsyncStorage.setItem('accessToken', data.tokens.access);
+      await AsyncStorage.setItem('refreshToken', data.tokens.refresh);
       await AsyncStorage.setItem('user', JSON.stringify(data.user));
       
       setAuthState({
         user: data.user,
         isAuthenticated: true,
         isLoading: false,
-        token: data.access,
+        token: data.tokens.access,
       });
-      setRefreshToken(data.refresh);
+      setRefreshToken(data.tokens.refresh);
       
       return true;
     } catch (error) {
@@ -145,6 +148,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUserData = async () => {
+    if (!authState.token) return;
+    
+    try {
+      const userData = await authAPI.getUserProfile();
+      setAuthState(prev => ({ ...prev, user: userData }));
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  };
+
   const logout = async () => {
     setAuthState({
       user: null,
@@ -171,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       pendingEmail,
       refreshAccessToken,
+      refreshUserData,
     }}>
       {children}
     </AuthContext.Provider>

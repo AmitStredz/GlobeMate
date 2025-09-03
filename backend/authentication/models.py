@@ -27,6 +27,10 @@ class UserProfile(models.Model):
     otp_expiry = models.DateTimeField(blank=True, null=True)
     is_email_verified = models.BooleanField(default=False)
     
+    # Local Host status
+    is_local_host = models.BooleanField(default=False, help_text="True if user is registered as a local host")
+    local_host_verified_at = models.DateTimeField(blank=True, null=True, help_text="When the user became a verified local host")
+    
     # Profile metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -11,8 +11,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = UserProfile
-        fields = ['id', 'username', 'email', 'age', 'gender', 'is_email_verified', 'created_at']
-        read_only_fields = ['id', 'created_at', 'is_email_verified']
+        fields = ['id', 'username', 'email', 'age', 'gender', 'is_email_verified', 'is_local_host', 'local_host_verified_at', 'created_at']
+        read_only_fields = ['id', 'created_at', 'is_email_verified', 'local_host_verified_at']
 
 class DistrictSerializer(serializers.ModelSerializer):
     class Meta:

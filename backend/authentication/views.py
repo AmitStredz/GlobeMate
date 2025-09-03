@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -18,6 +18,7 @@ from preferences.models import UserPreference
 
 class SignupView(APIView):
     """Handle user registration with email verification"""
+    permission_classes = [permissions.AllowAny]
     
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
@@ -79,6 +80,7 @@ class SignupView(APIView):
 
 class VerifyOTPView(APIView):
     """Verify email with OTP code"""
+    permission_classes = [permissions.AllowAny]
     
     def post(self, request):
         serializer = OTPVerificationSerializer(data=request.data)
@@ -129,6 +131,7 @@ class VerifyOTPView(APIView):
 
 class LoginView(APIView):
     """Handle user login"""
+    permission_classes = [permissions.AllowAny]
     
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -153,6 +156,7 @@ class LoginView(APIView):
 
 class ResendOTPView(APIView):
     """Resend OTP for email verification"""
+    permission_classes = [permissions.AllowAny]
     
     def post(self, request):
         email = request.data.get('email')
@@ -202,4 +206,13 @@ class ResendOTPView(APIView):
         return Response({
             "detail": "New verification code sent to your email."
         }, status=status.HTTP_200_OK)
+
+
+class UserProfileView(APIView):
+    """Get current user's profile information"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        serializer = UserDetailSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
   

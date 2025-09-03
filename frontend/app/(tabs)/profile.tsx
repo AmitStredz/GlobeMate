@@ -9,8 +9,15 @@ import {
   Alert,
 } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
-import { User, Settings, Heart, MapPin, LogOut, CreditCard as Edit, Bell, Shield, CircleHelp as HelpCircle } from 'lucide-react-native';
+import { User, Settings, Heart, MapPin, LogOut, CreditCard as Edit, Bell, Shield, CircleHelp as HelpCircle, Home } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+
+interface MenuItem {
+  icon: any;
+  title: string;
+  onPress: () => void;
+  isSpecial?: boolean;
+}
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -35,19 +42,40 @@ export default function Profile() {
     router.push('/(profile)/edit-profile')
   };
 
+  const handleLocalHostRegistration = () => {
+    router.push('/(profile)/local-host-onboarding');
+  };
+
   const handleMenuPress = (title: string) => {
     Alert.alert(title, `${title} feature coming soon!`);
   };
 
-  const menuItems = [
-    { icon: Edit, title: 'Edit Profile', onPress: handleEditProfile },
-    { icon: Settings, title: 'Settings', onPress: () => handleMenuPress('Settings') },
-    { icon: Bell, title: 'Notifications', onPress: () => handleMenuPress('Notifications') },
-    { icon: Heart, title: 'Saved Destinations', onPress: () => handleMenuPress('Saved Destinations') },
-    { icon: MapPin, title: 'My Trips', onPress: () => handleMenuPress('My Trips') },
-    { icon: Shield, title: 'Privacy', onPress: () => handleMenuPress('Privacy') },
-    { icon: HelpCircle, title: 'Help & Support', onPress: () => handleMenuPress('Help & Support') },
-  ];
+  // Filter menu items based on local host status
+  const getMenuItems = (): MenuItem[] => {
+    const baseMenuItems: MenuItem[] = [
+      { icon: Edit, title: 'Edit Profile', onPress: handleEditProfile },
+      { icon: Settings, title: 'Settings', onPress: () => handleMenuPress('Settings') },
+      { icon: Bell, title: 'Notifications', onPress: () => handleMenuPress('Notifications') },
+      { icon: Heart, title: 'Saved Destinations', onPress: () => handleMenuPress('Saved Destinations') },
+      { icon: MapPin, title: 'My Trips', onPress: () => handleMenuPress('My Trips') },
+      { icon: Shield, title: 'Privacy', onPress: () => handleMenuPress('Privacy') },
+      { icon: HelpCircle, title: 'Help & Support', onPress: () => handleMenuPress('Help & Support') },
+    ];
+
+    // Add local host registration option only if user is not already a local host
+    if (!user?.profile?.is_local_host) {
+      baseMenuItems.splice(1, 0, { 
+        icon: Home, 
+        title: 'Register as Local Host', 
+        onPress: handleLocalHostRegistration, 
+        isSpecial: true 
+      });
+    }
+
+    return baseMenuItems;
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -63,6 +91,12 @@ export default function Profile() {
               <Text style={styles.email}>
                 {user?.profile?.gender === 'M' ? 'Male' : user?.profile?.gender === 'F' ? 'Female' : 'Other'}
               </Text>
+              {user?.profile?.is_local_host && (
+                <View style={styles.localHostBadge}>
+                  <Home size={14} color="#F97316" />
+                  <Text style={styles.localHostText}>Verified Local Host</Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -88,14 +122,14 @@ export default function Profile() {
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.menuItem}
+              style={[styles.menuItem, item.isSpecial && styles.specialMenuItem]}
               onPress={item.onPress}
             >
               <View style={styles.menuItemLeft}>
-                <View style={styles.menuIconContainer}>
-                  <item.icon size={20} color="#6B7280" />
+                <View style={[styles.menuIconContainer, item.isSpecial && styles.specialMenuIconContainer]}>
+                  <item.icon size={20} color={item.isSpecial ? "#FFFFFF" : "#6B7280"} />
                 </View>
-                <Text style={styles.menuItemText}>{item.title}</Text>
+                <Text style={[styles.menuItemText, item.isSpecial && styles.specialMenuItemText]}>{item.title}</Text>
               </View>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -159,6 +193,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 12,
+  },
+  localHostBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(249, 115, 22, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  localHostText: {
+    fontSize: 12,
+    color: '#F97316',
+    fontWeight: '600',
+    marginLeft: 4,
   },
   preferencesContainer: {
     flexDirection: 'row',
@@ -224,6 +274,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
+  specialMenuItem: {
+    backgroundColor: '#FEF3E2',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    borderBottomWidth: 0,
+  },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -237,10 +294,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  specialMenuIconContainer: {
+    backgroundColor: '#F97316',
+  },
   menuItemText: {
     fontSize: 16,
     color: '#111827',
     fontWeight: '600',
+  },
+  specialMenuItemText: {
+    color: '#F97316',
+    fontWeight: '700',
   },
   menuItemArrow: {
     fontSize: 20,

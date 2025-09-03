@@ -151,6 +151,16 @@ export const authAPI = {
     
     return response.json();
   },
+
+  getUserProfile: async (): Promise<any> => {
+    const response = await apiFetch('/auth/profile/');
+    
+    if (!response.ok) {
+      throw new Error('Failed to get user profile');
+    }
+    
+    return response.json();
+  },
 };
 
 export const placesAPI = {
@@ -195,6 +205,168 @@ export const preferencesAPI = {
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.detail || 'Failed to fetch geographies');
+    }
+    
+    return response.json();
+  },
+};
+
+export const localHostAPI = {
+  // Application management
+  submitApplication: async (applicationData: {
+    fullName: string;
+    age: number;
+    address: string;
+    phoneNumber: string;
+    aadhaarNumber: string;
+    panNumber: string;
+    services: string[];
+    customService?: string;
+    description: string;
+    experienceYears?: number;
+    priceRange?: string;
+    availability?: string;
+    documentsProvided: string[];
+  }): Promise<{ message: string; application_id: number; status: string }> => {
+    const response = await apiFetch('/local-hosts/apply/', {
+      method: 'POST',
+      body: JSON.stringify({
+        full_name: applicationData.fullName,
+        age: applicationData.age,
+        address: applicationData.address,
+        phone_number: applicationData.phoneNumber,
+        aadhaar_number: applicationData.aadhaarNumber,
+        pan_number: applicationData.panNumber,
+        services_offered: applicationData.services,
+        custom_service: applicationData.customService,
+        service_description: applicationData.description,
+        experience_years: applicationData.experienceYears,
+        price_range: applicationData.priceRange,
+        availability: applicationData.availability,
+        documents_provided: applicationData.documentsProvided,
+      }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      let errorMessage = 'Application submission failed';
+      if (error.detail) {
+        errorMessage = error.detail;
+      } else if (typeof error === 'object') {
+        errorMessage = Object.entries(error)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+          .join('\n');
+      }
+      throw new Error(errorMessage);
+    }
+    
+    return response.json();
+  },
+
+  getApplicationStatus: async (): Promise<{
+    has_application: boolean;
+    application: any;
+  }> => {
+    const response = await apiFetch('/local-hosts/status/');
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to fetch application status');
+    }
+    
+    return response.json();
+  },
+
+  getProfile: async (): Promise<any> => {
+    const response = await apiFetch('/local-hosts/profile/');
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to fetch profile');
+    }
+    
+    return response.json();
+  },
+
+  // Public views
+  getLocalHosts: async (params?: {
+    services?: string;
+    search?: string;
+    page?: number;
+  }): Promise<any> => {
+    const searchParams = new URLSearchParams();
+    if (params?.services) searchParams.append('services', params.services);
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.page) searchParams.append('page', params.page.toString());
+    
+    const response = await apiFetch(
+      `/local-hosts/${searchParams.toString() ? '?' + searchParams.toString() : ''}`,
+      {},
+      false
+    );
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to fetch local hosts');
+    }
+    
+    return response.json();
+  },
+
+  getLocalHostDetail: async (id: number): Promise<any> => {
+    const response = await apiFetch(`/local-hosts/${id}/`, {}, false);
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to fetch local host details');
+    }
+    
+    return response.json();
+  },
+
+  getConstants: async (): Promise<{
+    services: Array<{ code: string; name: string }>;
+    documents: Array<{ code: string; name: string }>;
+    statuses: Array<{ code: string; name: string }>;
+  }> => {
+    const response = await apiFetch('/local-hosts/constants/', {}, false);
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to fetch constants');
+    }
+    
+    return response.json();
+  },
+
+  // Bookings
+  createBooking: async (bookingData: {
+    local_host: number;
+    service_type: string;
+    start_date: string;
+    end_date: string;
+    number_of_people: number;
+    special_requests?: string;
+  }): Promise<any> => {
+    const response = await apiFetch('/local-hosts/bookings/create/', {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to create booking');
+    }
+    
+    return response.json();
+  },
+
+  getBookings: async (): Promise<any> => {
+    const response = await apiFetch('/local-hosts/bookings/');
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to fetch bookings');
     }
     
     return response.json();

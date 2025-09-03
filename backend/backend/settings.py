@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-6i^ns*qxhkgym@-99ob7frw+a5v_2r=vlo_o@gfm11b(eul%bw
 DEBUG = True
 
 # ALLOWED_HOSTS = ['192.168.149.108', 'localhost']
-ALLOWED_HOSTS = ['192.168.149.108', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['192.168.149.108', 'localhost', '127.0.0.1', '0.0.0.0', '10.69.114.34', '192.168.43.176']
 
 # Application definition
 
@@ -45,12 +45,14 @@ INSTALLED_APPS = [
     
     # Third party apps
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
     
     # Local apps
     'authentication',    # User authentication and profiles
     'preferences',       # User preferences and location data  
     'places',           # Places and travel destinations
+    'local_hosts',      # Local host registration and management
 ]
 
 MIDDLEWARE = [
@@ -108,6 +110,16 @@ else:
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+# Django REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),  # Set to 7 days or your desired time
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -153,6 +165,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Media files (uploaded content)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

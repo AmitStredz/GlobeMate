@@ -20,6 +20,8 @@ export interface User {
     age: number;
     gender: string;
     is_email_verified: boolean;
+    is_local_host: boolean;
+    local_host_verified_at: string | null;
     created_at: string;
   };
   preferences: {
@@ -76,7 +78,7 @@ export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  token?: string; 
+  token?: string;
 }
 
 export interface Post {
@@ -97,10 +99,13 @@ export interface PlacesAPIResponse {
 
 export interface AuthResponse {
   user: User;
+  tokens: Tokens;
+}
+
+export interface Tokens {
   access: string;
   refresh: string;
 }
-
 export interface OTPVerificationResponse {
   user: User;
   tokens: {

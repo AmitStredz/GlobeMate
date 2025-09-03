@@ -36,6 +36,7 @@ export default function Home() {
 
   const fetchFeed = useCallback(async () => {
     if (!token) {
+      console.log("token not found")
       setError('Please log in to view places');
       setLoading(false);
       return;

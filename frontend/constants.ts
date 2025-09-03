@@ -50,3 +50,23 @@ export const GENDERS = [
   { code: 'F', label: 'Female' },
   { code: 'O', label: 'Other' },
 ]; 
+
+// Local Host Service Options
+export const LOCAL_HOST_SERVICES = [
+  { code: 'ACCOMMODATION', name: 'Accommodation (Room/House Rental)' },
+  { code: 'FOOD', name: 'Food Services' },
+  { code: 'GUIDE', name: 'Local Guiding Services' },
+  { code: 'TRANSPORT', name: 'Transportation Services' },
+  { code: 'EXPERIENCE', name: 'Local Experiences & Activities' },
+  { code: 'PHOTOGRAPHY', name: 'Photography Services' },
+  { code: 'OTHER', name: 'Other Services' },
+];
+
+// Document Types for Verification
+export const DOCUMENT_TYPES = [
+  { code: 'AADHAAR', name: 'Aadhaar Card' },
+  { code: 'PAN', name: 'PAN Card' },
+  { code: 'PASSPORT', name: 'Passport' },
+  { code: 'DRIVING_LICENSE', name: 'Driving License' },
+  { code: 'VOTER_ID', name: 'Voter ID' },
+];
