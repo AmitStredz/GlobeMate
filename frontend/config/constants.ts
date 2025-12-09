@@ -6,7 +6,8 @@
 // API Configuration
 export const API_CONFIG = {
   // BASE_URL: __DEV__ ? 'http://127.0.0.1:8000/api' : 'https://your-production-api.com/api',
-  BASE_URL: __DEV__ ? 'http://192.168.43.176:8000/api' : 'https://your-production-api.com/api',
+  // BASE_URL: __DEV__ ? 'http://192.168.1.36:8000/api' : 'https://your-production-api.com/api',
+  BASE_URL: __DEV__ ? 'http://192.168.29.229:8000/api' : 'https://your-production-api.com/api',
   TIMEOUT: 30000, // 30 seconds
   RETRY_ATTEMPTS: 3,
 } as const;
